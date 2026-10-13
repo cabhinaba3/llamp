@@ -16,3 +16,10 @@ venv/
 **/*.mps
 **/*.pyc
 !mpi-dep-graph/test/data/*.goal
+# build outputs
+Schedgen/schedgen
+Schedgen/cmdline.[ch]
+LogGOPSim/LogGOPSim
+LogGOPSim/txt2bin
+LogGOPSim/cmdline.[ch]
+LogGOPSim/cmdline_txt2bin.[ch]
