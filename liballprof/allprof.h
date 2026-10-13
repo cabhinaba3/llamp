@@ -10,7 +10,7 @@
 #define PRINT_BANNER 
 
 /* trace file prefix (relative to run directory) and suffix */
-#define FILE_PREFIX "/users/sshen/workspace/traces/pmpi-trace-rank-"
+#define FILE_PREFIX "./pmpi-trace-rank-"
 
 #define FILE_SUFFIX ".txt"
 

@@ -15,6 +15,11 @@
 #include <stdlib.h>
 #include <sys/utsname.h>
 #include <mpi.h>
+
+/* Open MPI >= 4 drops the deprecated MPI-1 handler typedef unless built with MPI-1 compat */
+#if defined(OPEN_MPI) && !OMPI_ENABLE_MPI1_COMPAT
+typedef void (MPI_Handler_function)(MPI_Comm *, int *, ...);
+#endif
 #include <assert.h>
 #include <errno.h>
 
