@@ -83,7 +83,7 @@ uint32_t MAKE_TAG(int comm, int tag)
 
 // TODO: dangerous
 static const int req_size = 4;
-static const int mpi_any_source = -2;
+static const int mpi_any_source = -1;
 static const int collsbase = 1000000;
 static const int MAX_STRLEN = 4096;
 

@@ -128,6 +128,14 @@ Goal::t_id Goal::Send(int bufsize, int dest) {
 
   this->id_counter++;
   tmp << "l" << this->id_counter << ": ";
+  if (dest == MPI_PROC_NULL_RANK) {
+    // MPI_PROC_NULL is a no-op in MPI; txt2bin cannot parse negative peers
+    tmp << "calc 0" << std::endl;
+    AppendString(tmp.str());
+    start.insert(id_counter);
+    end.insert(id_counter);
+    return this->id_counter;
+  }
   tmp << "send ";
   tmp << bufsize << "b ";
   tmp << "to " << dest << " tag " << curtag;
@@ -155,6 +163,14 @@ Goal::t_id Goal::Recv(int bufsize, int src) {
 
   this->id_counter++;
   tmp << "l" << this->id_counter << ": ";
+  if (src == MPI_PROC_NULL_RANK) {
+    // MPI_PROC_NULL is a no-op in MPI; txt2bin cannot parse negative peers
+    tmp << "calc 0" << std::endl;
+    AppendString(tmp.str());
+    start.insert(id_counter);
+    end.insert(id_counter);
+    return this->id_counter;
+  }
   tmp << "recv ";
   tmp << bufsize << "b ";
   tmp << "from " << src << " tag " << curtag;

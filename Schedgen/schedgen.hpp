@@ -20,6 +20,9 @@
 #include "buffer_element.hpp"
 #include "cmdline.h"
 
+// MPI_PROC_NULL in Open MPI
+static const int MPI_PROC_NULL_RANK = -2;
+
 class Goal;
 
 class LocOp {
