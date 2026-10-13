@@ -1,4 +1,26 @@
-#/bin/bash
+#!/bin/bash
+#
+# Builds the LLAMP toolchain.
+#   SKIP_MPI_BUILD=1   skip building UCX + MPICH from source (use the system MPI)
+#   SKIP_DEPS=1        skip gurobi / autoconf / hdf5 / netcdf / netgauge / pip (only needed for ICON & validation)
+# Always built: liballprof, liballprof2, Schedgen, LogGOPSim.
+
+# Resolve the repository root so every stage runs from a known directory
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT" || exit 1
+
+# System packages needed to build the tools
+need=""
+for t in gengetopt re2c bison flex mpicc g++ make; do
+    command -v $t &> /dev/null || need="$need $t"
+done
+if ! pkg-config --exists libgvc 2>/dev/null && [ ! -d /usr/include/graphviz ]; then need="$need graphviz-dev"; fi
+if [ -n "$need" ]; then
+    echo "[INFO] Missing build tools:$need - trying to install with apt"
+    SUDO=""; [ "$(id -u)" -ne 0 ] && SUDO=sudo
+    $SUDO apt-get install -y gengetopt re2c bison flex build-essential libgraphviz-dev graphviz openmpi-bin libopenmpi-dev gfortran wget \
+        || { echo "[ERROR] Please install the missing tools:$need"; exit 1; }
+fi
 
 # Defines the installation directory for UCX
 export UCX_ROOT=$PWD/validation/ucx
@@ -19,6 +41,8 @@ export MPICC=mpicc
 export MPIFC=mpifort
 
 
+if [ -z "$SKIP_MPI_BUILD" ]; then
+cd "$ROOT"
 echo "[INFO] Set up UCX ..."
 # Asserts that the UCX source code is in the "validation" directory
 if [ ! -d "validation/ucx" ]; then
@@ -62,9 +86,10 @@ fi
 
 echo "[INFO] UCX installation: SUCCESS"
 
-cd ../mpich
+cd "$ROOT"
 
 # Compile MPICH and install it
+cd "$ROOT"
 echo "[INFO] Set up MPICH ..."
 # Checks if the MPICH source code is in the "validation" directory
 if [ ! -d "validation/mpich" ]; then
@@ -111,31 +136,36 @@ then
     exit 1
 fi
 echo "[INFO] MPICH installation: SUCCESS"
-cd ../../
+cd "$ROOT"
 
 
+fi # SKIP_MPI_BUILD
+
+cd "$ROOT"
 echo "[INFO] Set up liballprof ..."
-cd liballprof/ && source ./setup.sh
+cd "$ROOT/liballprof" && source ./setup.sh
 # Asserts that the compilation was successful
 if [ $? -ne 0 ]; then
     echo "[ERROR] liballprof compilation failed."
     exit 1
 fi
 
+cd "$ROOT"
 echo "[INFO] Set up liballprof2"
-cd ../liballprof2 && make clean && make -j8
+cd "$ROOT/liballprof2" && make clean && make -j8
 # Asserts that the compilation was successful
 if [ $? -ne 0 ]; then
     echo "[ERROR] liballprof2 compilation failed."
     exit 1
 fi
-export LIBALLPROF2_C=$PWD/liballprof2/liballprof.so
-export LIBALLPROF2_F77=$PWD/liballprof2/liballprof_f77.so
+export LIBALLPROF2_C=$ROOT/liballprof2/liballprof.so
+export LIBALLPROF2_F77=$ROOT/liballprof2/liballprof_f77.so
 echo "[INFO] liballprof2 setup: SUCCESS"
 
+cd "$ROOT"
 echo "[INFO] Set up Schedgen"
 echo "[WARNING] Make sure to install the 'gengetopt' package before compiling Schedgen."
-cd ../Schedgen && make clean && make -j8
+cd "$ROOT/Schedgen" && make clean && make -j8
 # Asserts that the compilation was successful
 if [ $? -ne 0 ]; then
     echo "[ERROR] Schedgen compilation failed."
@@ -144,9 +174,10 @@ fi
 echo "[INFO] Schedgen setup: SUCCESS"
 export PATH=$PWD:$PATH
 
+cd "$ROOT"
 echo "[INFO] Set up LogGOPSim"
 echo "[WARNING] Make sure to install the 're2c' and 'graphviz-dev' packages before compiling Schedgen."
-cd ../LogGOPSim && make clean && make -j8
+cd "$ROOT/LogGOPSim" && make clean && make -j8
 # Asserts that the compilation was successful
 if [ $? -ne 0 ]; then
     echo "[ERROR] LogGOPSim compilation failed."
@@ -154,10 +185,12 @@ if [ $? -ne 0 ]; then
 fi
 echo "[INFO] LogGOPSim setup: SUCCESS"
 export PATH=$PWD:$PATH
-cd ..
+cd "$ROOT"
 
 
+if [ -z "$SKIP_DEPS" ]; then
 # Installs gurobi
+cd "$ROOT"
 echo "[INFO] Set up gurobi ..."
 # Checks if gurobi has already been installed by using the gurobi_cli command
 if ! command -v gurobi_cl &> /dev/null
@@ -192,6 +225,7 @@ echo "[INFO] Gurobi installation: SUCCESS"
 
 
 # Compiles autoconf
+cd "$ROOT"
 echo "[INFO] Set up autoconf ..."
 # Asserts that the autoconf source code is in the "deps" directory
 if [ ! -d "deps/autoconf" ]; then
@@ -203,7 +237,7 @@ if [ ! -d "deps/autoconf" ]; then
     mv autoconf-2.71 deps/autoconf
     rm autoconf-2.71.tar.gz
 fi
-cd deps/autoconf
+cd "$ROOT/deps/autoconf"
 ./configure --prefix=$AUTOCONF_INSTALL_DIR
 if [ $? -ne 0 ]; then
     echo "[ERROR] autoconf configuration failed."
@@ -230,6 +264,7 @@ fi
 
 
 # Build hdf5
+cd "$ROOT"
 echo "[INFO] Set up hdf5 ..."
 # Asserts that the hdf5 source code is in the "deps" directory
 if [ ! -d "deps/hdf5" ]; then
@@ -237,7 +272,7 @@ if [ ! -d "deps/hdf5" ]; then
     exit 1
 fi
 # Runs autogen.sh
-cd deps/hdf5
+cd "$ROOT/deps/hdf5"
 ./autogen.sh
 if [ $? -ne 0 ]; then
     echo "[ERROR] autogen.sh failed."
@@ -269,6 +304,7 @@ then
 fi
 
 # Build netcdf-c
+cd "$ROOT"
 echo "[INFO] Set up netcdf-c ..."
 # Asserts that the netcdf-c source code is in the "deps" directory
 if [ ! -d "deps/netcdf-c" ]; then
@@ -277,7 +313,7 @@ if [ ! -d "deps/netcdf-c" ]; then
 fi
 # Compiles netcdf-c
 echo "[INFO] Compiling netcdf-c ..."
-cd deps/netcdf-c
+cd "$ROOT/deps/netcdf-c"
 CC=$MPICC LDFLAGS=-L$HDF5_INSTALL_DIR/lib LIBS=-lhdf5 CPPFLAGS=-I$HDF5_INSTALL_DIR/include ./configure --enable-parallel-tests --prefix=$NETCDF_C_INSTALL_DIR --disable-libxml2
 if [ $? -ne 0 ]; then
     echo "[ERROR] netcdf-c configuration failed."
@@ -306,6 +342,7 @@ fi
 
 
 # Build netcdf-fortran
+cd "$ROOT"
 echo "[INFO] Set up netcdf-fortran ..."
 # Asserts that the netcdf-fortran source code is in the "deps" directory
 if [ ! -d "deps/netcdf-fortran" ]; then
@@ -314,7 +351,7 @@ if [ ! -d "deps/netcdf-fortran" ]; then
 fi
 # Compiles netcdf-fortran
 echo "[INFO] Compiling netcdf-fortran ..."
-cd deps/netcdf-fortran
+cd "$ROOT/deps/netcdf-fortran"
 CC=$MPICC FC=$MPIFC LIBS=-lnetcdf CPPFLAGS=-I$NETCDF_C_INSTALL_DIR/include LDFLAGS=-L$NETCDF_C_INSTALL_DIR/lib ./configure --enable-parallel-tests --prefix=$NETCDF_FORTRAN_INSTALL_DIR
 if [ $? -ne 0 ]; then
     echo "[ERROR] netcdf-fortran configuration failed."
@@ -341,6 +378,7 @@ then
 fi
 
 
+cd "$ROOT"
 echo "[INFO] Set up netgauge..."
 # Checks if the netgauge source code is in the "deps" directory
 if [ ! -d "deps/netgauge" ]; then
@@ -354,7 +392,7 @@ if [ ! -d "deps/netgauge" ]; then
 fi
 # Compiles netgauge
 echo "[INFO] Compiling netgauge ..."
-cd deps/netgauge
+cd "$ROOT/deps/netgauge"
 ./configure CC=$MPICC LIBS="-lpthread"
 if [ $? -ne 0 ]; then
     echo "[ERROR] netgauge configuration failed."
@@ -374,6 +412,10 @@ then
     exit 1
 fi
 
+cd "$ROOT"
 pip install -r requirements.txt
 
 echo "[INFO] All setup: SUCCESS"
+fi # SKIP_DEPS
+
+echo "[INFO] Tools: liballprof=$ROOT/liballprof/.libs/liballprof.so schedgen=$ROOT/Schedgen/schedgen loggopsim=$ROOT/LogGOPSim/LogGOPSim"

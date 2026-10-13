@@ -1,0 +1,13 @@
+# compiled binaries and objects
+jacobi2d
+*.o
+*.so
+*.a
+*.out
+# logs, text output and traces
+*.log
+*.txt
+traces/
+traces-8nodes/
+# generated GOAL files
+*.goal

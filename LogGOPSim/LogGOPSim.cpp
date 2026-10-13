@@ -533,7 +533,7 @@ int main(int argc, char **argv) {
             // matched_elem.offset << " -> " << "Rank " << elem.host << ": " << elem.offset << std::endl;
                 if (args_info.comm_dep_file_given)
                 {
-                  int32_t prev_cpu_offset = last_comm_cpu_offset[elem.host][cpu];
+                  int32_t prev_cpu_offset = last_comm_cpu_offset[elem.host][elem.proc];
                   if (prev_cpu_offset >= 0) {
                     auto dep_cpu = std::make_tuple(
                         static_cast<uint32_t>(elem.host),
@@ -542,7 +542,7 @@ int main(int argc, char **argv) {
                         static_cast<uint32_t>(matched_elem.offset));
                     comm_deps.push_back(dep_cpu);
                   }
-                  last_comm_cpu_offset[elem.host][cpu] = matched_elem.offset;
+                  last_comm_cpu_offset[elem.host][elem.proc] = matched_elem.offset;
                   int32_t prev_recv_offset = last_recv_offset[elem.host][elem.nic];
                   if (prev_recv_offset >= 0) {
                     auto dep_same_rank = std::make_tuple(
